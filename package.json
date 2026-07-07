@@ -1,0 +1,22 @@
+{
+  "name": "mcp-token-cost",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "run-estimate": "node mcp-token-estimate.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": "^24"
+  },
+  "type": "module",
+  "dependencies": {
+
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.2"
+  }
+}
