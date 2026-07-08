@@ -51,21 +51,21 @@ Uses the standard heuristic of **1 token ≈ 4 characters** (English prose + JSO
 
 Run: `node --experimental-strip-types mcp-token-estimate.ts`
 
- | Server | Transport | Tools | Est. Tokens | Avg Tokens/Tool | Bytes |
- |---|---|---|---|---|---|
- | Gmail | HTTP | 13 | 10,733 | 826 | 42,929 |
- | Google Drive | HTTP | 8 | 5,669 | 709 | 22,674 |
- | Google Calendar | HTTP | 8 | 17,851 | 2,231 | 71,402 |
- | Google People API | HTTP | 3 | 1,119 | 373 | 4,475 |
- | Google Chat | HTTP | 4 | 4,951 | 1,238 | 19,801 |
- | AWS | stdio | 9 | 5,200 | 578 | 20,798 |
- | Salesforce | stdio | 12 | 5,863 | 489 | 23,451 |
- | Google Cloud | stdio | 1 | 539 | 539 | 2,153 |
- | Azure | stdio | 66 | 20,500 | 311 | 81,999 |
- | MongoDB | stdio | 16 | 4,530 | 283 | 18,119 |
- | Grep | HTTP | 1 | 741 | 741 | 2,964 |
- | Context7 | HTTP | 2 | 1,229 | 615 | 4,916 |
- | Serena | stdio | 29 | 9,339 | 322 | 37,355 |
+ | Server | Category | Transport | Tools | Est. Tokens | Avg Tokens/Tool | Bytes |
+ |---|---|---|---|---|---|---|
+ | Gmail | Google Workspace | HTTP | 13 | 10,733 | 826 | 42,929 |
+ | Google Drive | Google Workspace | HTTP | 8 | 5,669 | 709 | 22,674 |
+ | Google Calendar | Google Workspace | HTTP | 8 | 17,851 | 2,231 | 71,402 |
+ | Google People API | Google Workspace | HTTP | 3 | 1,119 | 373 | 4,475 |
+ | Google Chat | Google Workspace | HTTP | 4 | 4,951 | 1,238 | 19,801 |
+ | AWS | Cloud | stdio | 9 | 5,200 | 578 | 20,798 |
+ | Salesforce | CRM | stdio | 12 | 5,863 | 489 | 23,451 |
+ | Google Cloud | Cloud | stdio | 1 | 539 | 539 | 2,153 |
+ | Azure | Cloud | stdio | 66 | 20,500 | 311 | 81,999 |
+ | MongoDB | Database | stdio | 16 | 4,530 | 283 | 18,119 |
+ | Grep | Developer Tools | HTTP | 1 | 741 | 741 | 2,964 |
+ | Context7 | Developer Tools | HTTP | 2 | 1,229 | 615 | 4,916 |
+ | Serena | Developer Tools | stdio | 29 | 9,339 | 322 | 37,355 |
 
 ### Key observations
 
