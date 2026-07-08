@@ -20,6 +20,8 @@
 
 import { spawn } from "node:child_process"
 
+import { getMicrosoftMcpTokenDeviceCode } from "./msft-oauth.ts"
+
 type StdioSpec = {
   name: string
   command: string
@@ -31,98 +33,116 @@ type RemoteSpec = {
   name: string
   remote: string
   headers?: Record<string, string>
+  /**
+   * Optional async auth resolver, invoked once before the handshake. Returns
+   * extra headers (e.g. `Authorization`) merged into every request for this
+   * server. Kept lazy so servers that don't need auth never trigger a sign-in.
+   */
+  auth?: () => Promise<Record<string, string>>
 }
 
 type ServerSpec = StdioSpec | RemoteSpec
 
 // Hardcoded list of MCP servers to prospect. Edit freely.
 const SERVERS: ServerSpec[] = [
-  // Remote (Streamable HTTP)
-  // Google
-  { name: "Google Drive", remote: "https://drivemcp.googleapis.com/mcp/v1" },
-  { name: "Google Calendar", remote: "https://calendarmcp.googleapis.com/mcp/v1" },
-  { name: "Google People API", remote: "https://people.googleapis.com/mcp/v1" },
-  { name: "Google Chat", remote: "https://chatmcp.googleapis.com/mcp/v1" },
-
-  // Box (Requires Auth)
-  // "https://mcp.box.com",
-
-  // Dropbox (No official MCP)
-
-  // Slack (Requires Auth)
-  // "https://mcp.slack.com/mcp",
-
-  // Canva (Requires Auth)
-  // "https://mcp.canva.com/mcp",
-
-  // Todoist (Requires Auth)
-  // "https://ai.todoist.net/mcp",
-
-  // HubSpot (Requires Auth)
-  // "https://mcp.hubspot.com",
-
-  // GitHub (Requires Auth)
-  // "https://api.githubcopilot.com/mcp",
-
-  // Snowflake (No official MCP)
-
-  // Postgres (No official MCP)
-
-  // Local (stdio)
-  // AWS
-  {
-    name: "AWS",
-    command: "uvx",
-    args: [
-      "mcp-proxy-for-aws==1.6.0",
-      "https://aws-mcp.us-east-1.api.aws/mcp",
-      "--metadata",
-      "AWS_REGION=us-west-2",
-    ],
-  },
-
-  // Salesforce
-  {
-    name: "Salesforce",
-    command: "npx",
-    args: [
-      "-y",
-      "@salesforce/mcp",
-      "--orgs",
-      "DEFAULT_TARGET_ORG",
-      "--toolsets",
-      "orgs,metadata,data,users",
-      "--tools",
-      "run_apex_test",
-      "--allow-non-ga-tools",
-    ],
-  },
-
-  // Google Cloud
-  {
-    name: "Google Cloud",
-    command: "npx",
-    args: ["-y", "@google-cloud/gcloud-mcp"],
-  },
-
-  // Azure
-  {
-    name: "Azure",
-    command: "npx",
-    args: ["-y", "@azure/mcp@latest", "server", "start"],
-  },
+  // // Remote (Streamable HTTP)
+  // // Google
+  // { name: "Google Drive", remote: "https://drivemcp.googleapis.com/mcp/v1" },
+  // { name: "Google Calendar", remote: "https://calendarmcp.googleapis.com/mcp/v1" },
+  // { name: "Google People API", remote: "https://people.googleapis.com/mcp/v1" },
+  // { name: "Google Chat", remote: "https://chatmcp.googleapis.com/mcp/v1" },
+  //
+  // // Box (Requires Auth)
+  // // "https://mcp.box.com",
+  //
+  // // Dropbox (No official MCP)
+  //
+  // // Slack (Requires Auth)
+  // // "https://mcp.slack.com/mcp",
+  //
+  // // Canva (Requires Auth)
+  // // "https://mcp.canva.com/mcp",
+  //
+  // // Todoist (Requires Auth)
+  // // "https://ai.todoist.net/mcp",
+  //
+  // // HubSpot (Requires Auth)
+  // // "https://mcp.hubspot.com",
+  //
+  // // GitHub (Requires Auth)
+  // // "https://api.githubcopilot.com/mcp",
+  //
+  // // Snowflake (No official MCP)
+  //
+  // // Postgres (No official MCP)
+  //
+  // // Local (stdio)
+  // // AWS
+  // {
+  //   name: "AWS",
+  //   command: "uvx",
+  //   args: [
+  //     "mcp-proxy-for-aws==1.6.0",
+  //     "https://aws-mcp.us-east-1.api.aws/mcp",
+  //     "--metadata",
+  //     "AWS_REGION=us-west-2",
+  //   ],
+  // },
+  //
+  // // Salesforce
+  // {
+  //   name: "Salesforce",
+  //   command: "npx",
+  //   args: [
+  //     "-y",
+  //     "@salesforce/mcp",
+  //     "--orgs",
+  //     "DEFAULT_TARGET_ORG",
+  //     "--toolsets",
+  //     "orgs,metadata,data,users",
+  //     "--tools",
+  //     "run_apex_test",
+  //     "--allow-non-ga-tools",
+  //   ],
+  // },
+  //
+  // // Google Cloud
+  // {
+  //   name: "Google Cloud",
+  //   command: "npx",
+  //   args: ["-y", "@google-cloud/gcloud-mcp"],
+  // },
+  //
+  // // Azure
+  // {
+  //   name: "Azure",
+  //   command: "npx",
+  //   args: ["-y", "@azure/mcp@latest", "server", "start"],
+  // },
 
   // All other Microsoft MCPs require {tenantId} as part of the url
+  {
+    name: "Microsoft Word",
+    remote: `https://agent365.svc.cloud.microsoft/agents/tenants/${process.env.MSFT_TENANT_ID}/servers/mcp_WordServer`,
+    // Work IQ servers need a *delegated* user token carrying the server's scope
+    // (app-only tokens are rejected with 403 "Scope 'McpServers.Word.All' is
+    // not present"). Device-code prints a URL+code to approve in a browser.
+    auth: async () => ({
+      Authorization: `Bearer ${await getMicrosoftMcpTokenDeviceCode([
+        "https://agent365.svc.cloud.microsoft/McpServers.Word.All",
+      ])}`,
+    }),
+  },
 
   // MongoDB
-  {
-    name: "MongoDB",
-    command: "npx",
-    args: ["-y", "mongodb-mcp-server@latest", "--readOnly"],
-    env: {
-      MDB_MCP_CONNECTION_STRING: "mongodb://localhost:27017/myDatabase",
-    },
-  },
+  // {
+  //   name: "MongoDB",
+  //   command: "npx",
+  //   args: ["-y", "mongodb-mcp-server@latest", "--readOnly"],
+  //   env: {
+  //     MDB_MCP_CONNECTION_STRING: "mongodb://localhost:27017/myDatabase",
+  //   },
+  // },
 ]
 
 const PROTOCOL_VERSION = "2025-06-18"
@@ -230,6 +250,13 @@ async function httpRpc(
 }
 
 async function fetchToolsHttp(spec: RemoteSpec): Promise<Tool[]> {
+  // Resolve auth once (e.g. acquire an OAuth token) and fold it into headers so
+  // every request in the handshake carries it.
+  if (spec.auth) {
+    const authHeaders = await spec.auth()
+    spec = { ...spec, headers: { ...spec.headers, ...authHeaders } }
+  }
+
   const init = await httpRpc(spec, "initialize", initializeParams, 1)
   if (!init.res.ok) {
     throw new Error(`initialize failed: HTTP ${init.res.status} ${init.res.statusText}`)
