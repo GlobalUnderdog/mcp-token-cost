@@ -19,7 +19,7 @@ const DATA = [
   {s:'Google Cloud',      c:'Cloud',             avg: 539,  tok:   539},
   {s:'Azure',             c:'Cloud',             avg: 311,  tok: 20500},
   {s:'Salesforce',        c:'CRM',               avg: 489,  tok:  5863},
-  {s:'Google Analytics',  c:'Analytics',         avg:1510,  tok: 13591},
+  {s:'Google Analytics',  c:'Database',          avg:1510,  tok: 13591},
   {s:'Redshift',          c:'Database',          avg:1116,  tok:  6694},
   {s:'MongoDB',           c:'Database',          avg: 264,  tok:  4759},
   {s:'BigQuery',          c:'Database',          avg:5486,  tok: 32914},
@@ -39,7 +39,7 @@ const DATA = [
   {s:'M365 Calendar',     c:'Microsoft 365',     avg: 349,  tok:  5577},
 ];
 
-const CATS = ['Cloud','CRM','Analytics','Database','Developer Tools','Google Workspace','Microsoft 365'];
+const CATS = ['Cloud','CRM','Database','Developer Tools','Google Workspace','Microsoft 365'];
 
 const COLORS = {
   'Cloud':             '#2563eb',
@@ -74,7 +74,7 @@ const TEXT_H = FONT_SZ * 2 + LINE_GAP;
 const CW = FONT_SZ * 0.58;
 const GAP = 3;
 const XR_LOG = [2.4, 4.8];
-const YR = [0, 18];
+const YR = [0, 15];
 const PW = 1040;   // 1350 - 80 - 230 (wider right margin)
 const PH = 805;    // 950 - 65 - 80
 const XR_SPAN = XR_LOG[1] - XR_LOG[0];
@@ -262,12 +262,13 @@ const layout = {
     zerolinecolor: '#cbd5e1',
     tickfont: { color: '#64748b' },
     tickformat: ',.0f',
+    tickangle:  -90,
+    ticklabelstandoff: 4,
     separatethousands: true,
   },
   yaxis: {
     showticklabels: false,
-    range: YR,
-    gridcolor:  '#e2e8f0',
+    showgrid:   false,
     zeroline:   false,
   },
   plot_bgcolor:  '#f8fafc',
