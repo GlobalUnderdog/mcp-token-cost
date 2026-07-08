@@ -134,6 +134,13 @@ const SERVERS: ServerSpec[] = [
     args: ["-y", "@azure/mcp@latest", "server", "start"],
   },
 
+  // Redshift (local uvx)
+  {
+    name: "Redshift",
+    command: "uvx",
+    args: ["awslabs.redshift-mcp-server@latest"],
+  },
+
   // Microsoft agent365 MCPs require {tenantId} in the URL and a delegated
   // McpServers.<Service>.All scope in the access token.
   microsoftMcpServer("Microsoft Word", "mcp_WordServer", ),
@@ -170,6 +177,9 @@ const SERVERS: ServerSpec[] = [
       "start-mcp-server",
     ],
   },
+
+  // BigQuery — remote HTTP, tools/list is public
+  { name: "BigQuery", remote: "https://bigquery.googleapis.com/mcp" },
 ]
 
 const PROTOCOL_VERSION = "2025-06-18"

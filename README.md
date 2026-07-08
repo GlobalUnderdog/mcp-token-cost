@@ -2,7 +2,7 @@
  
 Estimate how many tokens each MCP server's tool definitions would consume if loaded into a model's context. This helps with context-window budgeting when choosing which MCP servers to include in a session.
  
-Currently probes **5 Google Workspace MCP servers** (Gmail, Drive, Calendar, Chat, People API) plus a mix of popular stdio and HTTP servers.
+Currently probes **Google Workspace** (Gmail, Drive, Calendar, Chat, People API), **BigQuery**, **Redshift**, plus a mix of popular stdio and HTTP servers.
 ## How It Works
 
 Each MCP server exposes a `tools/list` RPC method that returns its tool definitions — names, descriptions, and input schemas. When a model loads a server, these definitions are serialized into the prompt as JSON and counted against the context window.
@@ -58,7 +58,9 @@ Run: `node --experimental-strip-types mcp-token-estimate.ts`
  | Google Calendar | Google Workspace | HTTP | 8 | 17,851 | 2,231 | 71,402 |
  | Google People API | Google Workspace | HTTP | 3 | 1,119 | 373 | 4,475 |
  | Google Chat | Google Workspace | HTTP | 4 | 4,951 | 1,238 | 19,801 |
+ | BigQuery | Database | HTTP | 6 | 32,914 | 5,486 | 131,655 |
  | AWS | Cloud | stdio | 9 | 5,200 | 578 | 20,798 |
+ | Redshift | Database | stdio | 6 | 6,694 | 1,116 | 26,775 |
  | Salesforce | CRM | stdio | 12 | 5,863 | 489 | 23,451 |
  | Google Cloud | Cloud | stdio | 1 | 539 | 539 | 2,153 |
  | Azure | Cloud | stdio | 66 | 20,500 | 311 | 81,999 |
@@ -69,13 +71,15 @@ Run: `node --experimental-strip-types mcp-token-estimate.ts`
 
 ### Key observations
 
-- **Azure** is the heaviest by far: 66 tools, ~20.5K tokens, 82KB serialized — roughly 15% of a 128K context window consumed by tool definitions alone.
-- **Serena** is the second-heaviest by bytes: 29 tools, ~9.3K tokens, 37KB — roughly 7% of a 128K window. It uses the context-aware `ide-assistant` context (fewer tools than `desktop-app`) since the script doesn't pass `--context`.
+- **BigQuery** is the heaviest by far: only 6 tools but 32.9K tokens and 132KB serialized — ~26% of a 128K window. Its `execute_sql` / `execute_sql_readonly` tools carry enormous input schemas, averaging 5,486 tokens per tool.
+- **Azure** is second by both tokens (20.5K) and bytes (82KB): 66 tools averaging 311 tokens each. Roughly 15% of a 128K context window.
+- **Serena** is third by bytes: 29 tools, ~9.3K tokens, 37KB — roughly 7% of a 128K window. Uses the context-aware `ide-assistant` context (fewer tools than `desktop-app`) since the script doesn't pass `--context`.
 - **Google Cloud** and **Grep** are the lightest: a single tool each, ~0.5K and ~0.7K tokens respectively.
-- **Google Calendar** has dense input schemas: only 8 tools but averaging 2,231 tokens each (second-highest total).
+- **Google Calendar** has dense input schemas: only 8 tools but averaging 2,231 tokens each.
+- **Redshift** is right-sized: 6 tools at 6.7K tokens total, 1,116 avg — comparable to Salesforce (12 tools, 5.9K).
 - **Context7** is lightweight at 2 tools and ~1.2K tokens, despite fetching potentially large documentation payloads at runtime.
-- **Gmail** exposes 13 tools (more than the 10 documented on the page — the live `tools/list` reveals additional `list_drafts`, `label_thread`, and `unlabel_thread`), totaling ~10.7K tokens and 43KB. Its 826 avg tokens/tool is moderate among the Google services.
-- **Grep** (from [Vercel's blog post](https://vercel.com/blog/grep-a-million-github-repositories-via-mcp)) exposes a single code-search tool, adding only ~741 tokens of schema overhead for access to 1M+ GitHub repositories.
+- **Gmail** exposes 13 tools (more than the 10 on the page — live `tools/list` reveals `list_drafts`, `label_thread`, `unlabel_thread`), ~10.7K tokens and 43KB.
+- **Grep** (from [Vercel's blog post](https://vercel.com/blog/grep-a-million-github-repositories-via-mcp)) adds only ~741 tokens for access to 1M+ GitHub repositories.
 - Most stdio servers stay under 6K tokens total, with Azure and Serena being the exceptions.
 
 ## Usage
