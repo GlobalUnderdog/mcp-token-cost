@@ -45,8 +45,6 @@ const MCP_SCOPES = [
   "https://agent365.svc.cloud.microsoft/McpServers.SharePoint.All",
   // Teams
   "https://agent365.svc.cloud.microsoft/McpServers.Teams.All",
-  // SQL
-  // "https://agent365.svc.cloud.microsoft/McpServers.SQL.All",
   // M365 User
   "https://agent365.svc.cloud.microsoft/McpServers.Me.All",
   // Calendar
