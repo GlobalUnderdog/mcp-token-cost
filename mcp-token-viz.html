@@ -56,7 +56,7 @@ const catBase = {};
 CATS.forEach((c, i) => { catBase[c] = (CATS.length - 1 - i) * 2.5 + 0.75; });
 
 // ── Size: natural log of avg tokens per tool (diameter mode) ──
-const SIZEREF = 5.5;
+const SIZEREF = 0.2;
 const sizeFn = d => Math.log(d.avg);
 
 DATA.forEach(d => {
@@ -85,7 +85,7 @@ function pxY(v) { return (YR[1] - v) / (YR[1] - YR[0]) * PH; }
 DATA.forEach(d => {
   d._px = pxX(d.tok);
   d._py = pxY(d.y);
-  d._mr = d.sz * SIZEREF / 2;
+  d._mr = d.sz / SIZEREF / 2;
   const stat = `${d.tok.toLocaleString()} tok · ${(d.tok/2000).toFixed(1)}%`;
   d.label = `${d.s}<br>${stat}`;
   d._tw = Math.max(d.s.length, stat.length) * CW;
@@ -174,7 +174,7 @@ const sizeAnnos = [
         xanchor: 'left', yanchor: 'middle',
         showarrow: false,
         text: '●',
-        font: { size: Math.log(v) * SIZEREF * 0.6, color: '#94a3b8' },
+        font: { size: Math.log(v) * 4.5, color: '#94a3b8' },
       },
       {
         x: 1.06, y: y,
