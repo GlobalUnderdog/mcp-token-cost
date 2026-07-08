@@ -20,7 +20,7 @@
 
 import { spawn } from "node:child_process"
 
-import { getMicrosoftMcpTokenDeviceCode } from "./msft-oauth.ts"
+import {  getMicrosoftMcpTokenDeviceCode,} from "./msft-oauth.ts"
 
 type StdioSpec = {
   name: string
@@ -42,6 +42,19 @@ type RemoteSpec = {
 }
 
 type ServerSpec = StdioSpec | RemoteSpec
+
+function microsoftMcpServer(
+  name: string,
+  serverId: string,
+): RemoteSpec {
+  return {
+    name,
+    remote: `https://agent365.svc.cloud.microsoft/agents/tenants/${process.env.MSFT_TENANT_ID}/servers/${serverId}`,
+    auth: async () => ({
+      Authorization: `Bearer ${await getMicrosoftMcpTokenDeviceCode()}`,
+    }),
+  }
+}
 
 // Hardcoded list of MCP servers to prospect. Edit freely.
 const SERVERS: ServerSpec[] = [
@@ -120,14 +133,20 @@ const SERVERS: ServerSpec[] = [
   //   args: ["-y", "@azure/mcp@latest", "server", "start"],
   // },
 
-  // All other Microsoft MCPs require {tenantId} as part of the url
-  {
-    name: "Microsoft Word",
-    remote: `https://agent365.svc.cloud.microsoft/agents/tenants/${process.env.MSFT_TENANT_ID}/servers/mcp_WordServer`,
-    auth: async () => ({
-      Authorization: `Bearer ${await getMicrosoftMcpTokenDeviceCode()}`,
-    }),
-  },
+  // Microsoft agent365 MCPs require {tenantId} in the URL and a delegated
+  // McpServers.<Service>.All scope in the access token.
+  microsoftMcpServer("Microsoft Word", "mcp_WordServer", ),
+  microsoftMcpServer(
+    "Microsoft OneDrive",
+    "mcp_OneDriveServer",
+  ),
+  microsoftMcpServer(
+    "Microsoft SharePoint",
+    "mcp_SharePointServer",
+  ),
+  microsoftMcpServer("Microsoft Teams", "mcp_TeamsServer"),
+  microsoftMcpServer(    "Microsoft 365 User", "mcp_MeServer"),
+  microsoftMcpServer(    "Microsoft 365 Calendar",    "mcp_CalendarServer"  ),
 
   // MongoDB
   // {

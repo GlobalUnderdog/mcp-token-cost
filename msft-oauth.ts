@@ -33,10 +33,24 @@ import {
   LogLevel,
 } from "@azure/msal-node"
 
-// Requesting scopes for all MCP servers that we want to estimate
-// Since this is just a testing app, there is no problem in over-requesting
+/**
+ * Request all scopes at once to reduce the number of required sign-ins
+ */
 const MCP_SCOPES = [
-  "https://agent365.svc.cloud.microsoft/McpServers.Word.All"
+  // Word
+  "https://agent365.svc.cloud.microsoft/McpServers.Word.All",
+  // One Drive
+  "https://agent365.svc.cloud.microsoft/McpServers.OneDrive.All",
+  // SharePoint
+  "https://agent365.svc.cloud.microsoft/McpServers.SharePoint.All",
+  // Teams
+  "https://agent365.svc.cloud.microsoft/McpServers.Teams.All",
+  // SQL
+  // "https://agent365.svc.cloud.microsoft/McpServers.SQL.All",
+  // M365 User
+  "https://agent365.svc.cloud.microsoft/McpServers.Me.All",
+  // Calendar
+  "https://agent365.svc.cloud.microsoft/McpServers.Calendar.All",
 ]
 const TOKEN_CACHE_FILE = ".msft-token-cache.json"
 const TOKEN_EXPIRY_SKEW_MS = 5 * 60_000
@@ -114,8 +128,10 @@ function publicClient(): PublicClientApplication {
  *
  * This also triggers interactive consent for exactly that scope on first sign-in.
  */
-export async function getMicrosoftMcpTokenDeviceCode(): Promise<string> {
-  const requestedScopes = MCP_SCOPES
+export async function getMicrosoftMcpTokenDeviceCode(
+  scopes: string[] = MCP_SCOPES,
+): Promise<string> {
+  const requestedScopes = scopes
   const cache = await readTokenCache()
   const cacheKey = tokenCacheKey(requestedScopes)
   const cached = cache[cacheKey]
