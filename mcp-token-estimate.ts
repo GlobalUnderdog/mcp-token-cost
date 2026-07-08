@@ -136,17 +136,11 @@ const SERVERS: ServerSpec[] = [
   // Microsoft agent365 MCPs require {tenantId} in the URL and a delegated
   // McpServers.<Service>.All scope in the access token.
   microsoftMcpServer("Microsoft Word", "mcp_WordServer", ),
-  microsoftMcpServer(
-    "Microsoft OneDrive",
-    "mcp_OneDriveServer",
-  ),
-  microsoftMcpServer(
-    "Microsoft SharePoint",
-    "mcp_SharePointServer",
-  ),
+  microsoftMcpServer("Microsoft OneDrive","mcp_OneDriveRemoteServer"),
+  microsoftMcpServer("Microsoft SharePoint","mcp_SharePointRemoteServer"),
   microsoftMcpServer("Microsoft Teams", "mcp_TeamsServer"),
-  microsoftMcpServer(    "Microsoft 365 User", "mcp_MeServer"),
-  microsoftMcpServer(    "Microsoft 365 Calendar",    "mcp_CalendarServer"  ),
+  microsoftMcpServer("Microsoft 365 User", "mcp_MeServer"),
+  microsoftMcpServer("Microsoft 365 Calendar", "mcp_CalendarTools"),
 
   // MongoDB
   // {
@@ -411,6 +405,7 @@ async function main() {
         bytes: serialized.length,
       })
     } catch (err) {
+      console.error(err)
       rows.push({
         server,
         transport: isStdio(spec) ? "stdio" : "http",
