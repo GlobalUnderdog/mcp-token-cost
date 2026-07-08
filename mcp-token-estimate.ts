@@ -123,6 +123,24 @@ const SERVERS: ServerSpec[] = [
       MDB_MCP_CONNECTION_STRING: "mongodb://localhost:27017/myDatabase",
     },
   },
+
+  // Grep (grep.app) — public GitHub code search over 1M+ repos
+  { name: "Grep", remote: "https://mcp.grep.app" },
+
+  // Context7 — library documentation via MCP
+  { name: "Context7", remote: "https://mcp.context7.com/mcp" },
+
+  // Serena — IDE-grade code intelligence MCP server (requires uv)
+  {
+    name: "Serena",
+    command: "uvx",
+    args: [
+      "--from",
+      "git+https://github.com/oraios/serena",
+      "serena",
+      "start-mcp-server",
+    ],
+  },
 ]
 
 const PROTOCOL_VERSION = "2025-06-18"

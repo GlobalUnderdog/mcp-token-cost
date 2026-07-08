@@ -45,6 +45,7 @@ Uses the standard heuristic of **1 token ≈ 4 characters** (English prose + JSO
 
     estimateTokens(text) = Math.ceil(text.length / 4)
 
+
 ## Results
 
 Run: `node --experimental-strip-types mcp-token-estimate.ts`
@@ -60,14 +61,19 @@ Run: `node --experimental-strip-types mcp-token-estimate.ts`
 | Google Cloud | stdio | 1 | 539 | 539 | 2,153 |
 | Azure | stdio | 66 | 20,500 | 311 | 81,999 |
 | MongoDB | stdio | 16 | 4,530 | 283 | 18,119 |
+| Grep | HTTP | 1 | 741 | 741 | 2,964 |
+| Context7 | HTTP | 2 | 1,229 | 615 | 4,916 |
+| Serena | stdio | 29 | 9,339 | 322 | 37,355 |
 
 ### Key observations
 
 - **Azure** is the heaviest by far: 66 tools, ~20.5K tokens, 82KB serialized — roughly 15% of a 128K context window consumed by tool definitions alone.
-- **Google Cloud** is the lightest: a single tool at ~0.5K tokens.
+- **Serena** is the second-heaviest by bytes: 29 tools, ~9.3K tokens, 37KB — roughly 7% of a 128K window. It uses the context-aware `ide-assistant` context (fewer tools than `desktop-app`) since the script doesn't pass `--context`.
+- **Google Cloud** and **Grep** are the lightest: a single tool each, ~0.5K and ~0.7K tokens respectively.
 - **Google Calendar** has dense input schemas: only 8 tools but averaging 2,231 tokens each (second-highest total).
-- **Google People API** is the outlier lightest among the Google services: 3 tools at 373 avg tokens.
-- Most stdio servers stay under 6K tokens total, with Azure being the exception.
+- **Context7** is lightweight at 2 tools and ~1.2K tokens, despite fetching potentially large documentation payloads at runtime.
+- **Grep** (from [Vercel's blog post](https://vercel.com/blog/grep-a-million-github-repositories-via-mcp)) exposes a single code-search tool, adding only ~741 tokens of schema overhead for access to 1M+ GitHub repositories.
+- Most stdio servers stay under 6K tokens total, with Azure and Serena being the exceptions.
 
 ## Usage
 
