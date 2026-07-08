@@ -2,7 +2,7 @@
  
 Estimate how many tokens each MCP server's tool definitions would consume if loaded into a model's context. This helps with context-window budgeting when choosing which MCP servers to include in a session.
  
-Currently probes **Google Workspace** (Gmail, Drive, Calendar, Chat, People API), **BigQuery**, **Redshift**, plus a mix of popular stdio and HTTP servers.
+Currently probes **Google Workspace** (Gmail, Drive, Calendar, Chat, People API), **BigQuery**, **Google Analytics**, **Redshift**, plus a mix of popular stdio and HTTP servers.
 ## How It Works
 
 Each MCP server exposes a `tools/list` RPC method that returns its tool definitions — names, descriptions, and input schemas. When a model loads a server, these definitions are serialized into the prompt as JSON and counted against the context window.
@@ -58,6 +58,7 @@ Run: `node --experimental-strip-types mcp-token-estimate.ts`
  | Google Calendar | Google Workspace | HTTP | 8 | 17,851 | 2,231 | 71,402 |
  | Google People API | Google Workspace | HTTP | 3 | 1,119 | 373 | 4,475 |
  | Google Chat | Google Workspace | HTTP | 4 | 4,951 | 1,238 | 19,801 |
+ | Google Analytics | Analytics | stdio | 9 | 13,591 | 1,510 | 54,363 |
  | BigQuery | Database | HTTP | 6 | 32,914 | 5,486 | 131,655 |
  | AWS | Cloud | stdio | 9 | 5,200 | 578 | 20,798 |
  | Redshift | Database | stdio | 6 | 6,694 | 1,116 | 26,775 |
@@ -77,6 +78,7 @@ Run: `node --experimental-strip-types mcp-token-estimate.ts`
 - **Google Cloud** and **Grep** are the lightest: a single tool each, ~0.5K and ~0.7K tokens respectively.
 - **Google Calendar** has dense input schemas: only 8 tools but averaging 2,231 tokens each.
 - **Redshift** is right-sized: 6 tools at 6.7K tokens total, 1,116 avg — comparable to Salesforce (12 tools, 5.9K).
+- **Google Analytics** is moderately heavy: 9 tools at 13.6K tokens and 54KB (1,510 avg). More tools than the 7 documented — live `tools/list` returns 9.
 - **Context7** is lightweight at 2 tools and ~1.2K tokens, despite fetching potentially large documentation payloads at runtime.
 - **Gmail** exposes 13 tools (more than the 10 on the page — live `tools/list` reveals `list_drafts`, `label_thread`, `unlabel_thread`), ~10.7K tokens and 43KB.
 - **Grep** (from [Vercel's blog post](https://vercel.com/blog/grep-a-million-github-repositories-via-mcp)) adds only ~741 tokens for access to 1M+ GitHub repositories.

@@ -141,6 +141,13 @@ const SERVERS: ServerSpec[] = [
     args: ["awslabs.redshift-mcp-server@latest"],
   },
 
+  // Google Analytics (local pipx)
+  {
+    name: "Google Analytics",
+    command: "pipx",
+    args: ["run", "analytics-mcp"],
+  },
+
   // Microsoft agent365 MCPs require {tenantId} in the URL and a delegated
   // McpServers.<Service>.All scope in the access token.
   microsoftMcpServer("Microsoft Word", "mcp_WordServer", ),
