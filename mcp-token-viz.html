@@ -203,35 +203,41 @@ const traces = CATS.map(cat => {
   };
 });
 
-// ── Size reference annotations (right margin, dots column + text right) ──
+// ── Size reference annotations (below legend, left-aligned) ──
 const sizeRefs = [200, 500, 2000, 5000];
-const CHART_W = 1350;
 const sizeAnnos = [
+  // Separator below legend
   {
-    x: 1.02, y: 0.73,
+    x: 1.02, y: 0.66,
     xref: 'paper', yref: 'paper',
-    xanchor: 'middle', yanchor: 'middle',
+    xanchor: 'left', yanchor: 'top',
+    showarrow: false,
+    text: '────────────────',
+    font: { size: 10, color: '#cbd5e1' },
+  },
+  // Title
+  {
+    x: 1.02, y: 0.635,
+    xref: 'paper', yref: 'paper',
+    xanchor: 'left', yanchor: 'top',
     showarrow: false,
     text: '<b>Avg Tokens per Tool</b>',
     font: { size: 11, color: '#475569' },
-    align: 'middle',
   },
   ...sizeRefs.flatMap((v, i) => {
-    const baseY = 0.63 - i * 0.085;
-    const dotFont = v ** 0.33 * 4.5;
-    const dotRpx = dotFont * 0.375;
-    const txOff = (dotRpx + 5) / CHART_W;
+    const baseY = 0.59 - i * 0.085;
+    const dotSz = v ** 0.33 * 4.5;
     return [
       {
         x: 1.02, y: baseY,
         xref: 'paper', yref: 'paper',
-        xanchor: 'middle', yanchor: 'middle',
+        xanchor: 'center', yanchor: 'middle',
         showarrow: false,
         text: '●',
-        font: { size: dotFont, color: '#94a3b8' },
+        font: { size: dotSz, color: '#94a3b8' },
       },
       {
-        x: 1.02 + txOff, y: baseY,
+        x: 1.045, y: baseY,
         xref: 'paper', yref: 'paper',
         xanchor: 'left', yanchor: 'middle',
         showarrow: false,
