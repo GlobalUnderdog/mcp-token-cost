@@ -58,7 +58,7 @@ Run: `node --experimental-strip-types mcp-token-estimate.ts`
  | Google Calendar | Google Workspace | HTTP | 8 | 17,851 | 2,231 | 71,402 |
  | Google People API | Google Workspace | HTTP | 3 | 1,119 | 373 | 4,475 |
  | Google Chat | Google Workspace | HTTP | 4 | 4,951 | 1,238 | 19,801 |
- | Google Analytics | Analytics | stdio | 9 | 13,591 | 1,510 | 54,363 |
+ | Google Analytics | Database | stdio | 9 | 13,591 | 1,510 | 54,363 |
  | BigQuery | Database | HTTP | 6 | 32,914 | 5,486 | 131,655 |
  | AWS | Cloud | stdio | 9 | 5,200 | 578 | 20,798 |
  | Redshift | Database | stdio | 6 | 6,694 | 1,116 | 26,775 |
