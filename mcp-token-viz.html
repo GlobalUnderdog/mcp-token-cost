@@ -67,7 +67,7 @@ DATA.forEach(d => {
   d.sz = sizeFn(d);
 });
 
-// ── Collision-aware 2-line label positioning ──
+// ── Collision-aware label positioning (top → bottom → right → left) ──
 const FONT_SZ = 12;
 const LINE_GAP = 2;
 const TEXT_H = FONT_SZ * 2 + LINE_GAP;
@@ -76,11 +76,27 @@ const GAP = 3;
 const XR_LOG = [2.4, 4.8];
 const YR = [0, 18];
 const PW = 1040;   // 1350 - 80 - 230 (wider right margin)
-const PH = 805;
+const PH = 805;    // 950 - 65 - 80
 const XR_SPAN = XR_LOG[1] - XR_LOG[0];
 
 function pxX(v) { return (Math.log10(v) - XR_LOG[0]) / XR_SPAN * PW; }
 function pxY(v) { return (YR[1] - v) / (YR[1] - YR[0]) * PH; }
+
+function labelBox(d, pos) {
+  const hw = d._tw / 2;
+  switch (pos) {
+    case 'top center':
+      return { l: d._px - hw, r: d._px + hw, t: d._py - d._mr - GAP - TEXT_H, b: d._py - d._mr - GAP };
+    case 'bottom center':
+      return { l: d._px - hw, r: d._px + hw, t: d._py + d._mr + GAP, b: d._py + d._mr + GAP + TEXT_H };
+    case 'right center':
+      return { l: d._px + d._mr + GAP, r: d._px + d._mr + GAP + d._tw, t: d._py - TEXT_H / 2, b: d._py + TEXT_H / 2 };
+    case 'left center':
+      return { l: d._px - d._mr - GAP - d._tw, r: d._px - d._mr - GAP, t: d._py - TEXT_H / 2, b: d._py + TEXT_H / 2 };
+  }
+}
+function circleBox(d) { return { l: d._px - d._mr, r: d._px + d._mr, t: d._py - d._mr, b: d._py + d._mr }; }
+function overlap(a, b) { return a.r > b.l && b.r > a.l && a.b > b.t && b.b > a.t; }
 
 DATA.forEach(d => {
   d._px = pxX(d.tok);
@@ -93,42 +109,76 @@ DATA.forEach(d => {
   d._pos = 'top center';
 });
 
+function tryPositions(d, items, order) {
+  for (const pos of order) {
+    const box = labelBox(d, pos);
+    // off-chart check
+    if (box.l < 0 || box.r > PW) continue;
+    // label-vs-label overlap with other items' final positions
+    let ok = true;
+    for (const b of items) {
+      if (b === d) continue;
+      const bBox = labelBox(b, b._pos);
+      if (overlap(box, bBox)) { ok = false; break; }
+    }
+    // label-vs-circle overlap
+    if (ok) {
+      for (const b of items) {
+        if (b === d) continue;
+        const cb = circleBox(b);
+        if (overlap(box, cb)) { ok = false; break; }
+      }
+    }
+    if (ok) { d._pos = pos; return true; }
+  }
+  return false;
+}
+
 CATS.forEach(cat => {
   const items = DATA.filter(d => d.c === cat);
   items.sort((a, b) => a._px - b._px);
 
+  // Pass 1: flip overlapping adjacent top labels to bottom
   for (let i = 0; i < items.length; i++) {
     for (let j = i + 1; j < items.length; j++) {
       const a = items[i], b = items[j];
       if (a._pos !== 'top center' || b._pos !== 'top center') continue;
-
-      const aTop = a._py - a._mr - GAP - TEXT_H;
-      const aBot = a._py - a._mr - GAP;
-      const bTop = b._py - b._mr - GAP - TEXT_H;
-      const bBot = b._py - b._mr - GAP;
-      const horizOverlap = Math.abs(a._px - b._px) < (a._tw + b._tw) / 2 + 2;
-      const vertOverlap  = aBot > bTop && bBot > aTop;
-
-      if (horizOverlap && vertOverlap) {
+      if (overlap(labelBox(a, 'top center'), labelBox(b, 'top center'))) {
         if (a._py > b._py) a._pos = 'bottom center';
         else               b._pos = 'bottom center';
       }
     }
   }
 
+  // Pass 2: fix any bottom label that collides below; try right/left as fallback
+  const TRIAL = ['right center', 'left center', 'top center'];
   for (const a of items) {
     if (a._pos !== 'bottom center') continue;
-    const aBot = a._py + a._mr + GAP + TEXT_H;
+    // Check if bottom label goes below plot area
+    const botBox = labelBox(a, 'bottom center');
+    const hitsBottom = botBox.b > PH;
+    // Check if bottom label hits a circle below
+    let hitsCircle = false;
     for (const b of items) {
       if (b === a || b._py <= a._py) continue;
-      const bTop = b._py - b._mr;
-      const horiz = Math.abs(a._px - b._px) < a._tw / 2 + b._mr;
-      if (horiz && aBot > bTop) {
-        a._pos = 'top center';
-        break;
-      }
+      if (overlap(botBox, circleBox(b))) { hitsCircle = true; break; }
+    }
+    if (hitsBottom || hitsCircle) {
+      // Reset to top, then try better positions
+      a._pos = 'top center';
+      tryPositions(a, items, TRIAL);
     }
   }
+});
+// ── Manual label position overrides ──
+const forcedPos = {
+  'Google Calendar': 'right center',
+  'Gmail':           'top center',
+  'Grep':            'left center',
+  'Serena':          'right center',
+};
+DATA.forEach(d => {
+  if (forcedPos[d.s]) d._pos = forcedPos[d.s];
 });
 
 // ── Main category traces ──
@@ -153,31 +203,35 @@ const traces = CATS.map(cat => {
   };
 });
 
-// ── Size reference annotations (right margin, stacked below legend) ──
+// ── Size reference annotations (right margin, dots column + text right) ──
 const sizeRefs = [200, 500, 2000, 5000];
+const CHART_W = 1350;
 const sizeAnnos = [
   {
-    x: 1.02, y: 0.70,
+    x: 1.02, y: 0.73,
     xref: 'paper', yref: 'paper',
-    xanchor: 'left', yanchor: 'middle',
+    xanchor: 'middle', yanchor: 'middle',
     showarrow: false,
     text: '<b>Avg Tokens per Tool</b>',
     font: { size: 11, color: '#475569' },
-    align: 'left',
+    align: 'middle',
   },
   ...sizeRefs.flatMap((v, i) => {
-    const y = 0.62 - i * 0.09;
+    const baseY = 0.63 - i * 0.085;
+    const dotFont = v ** 0.33 * 4.5;
+    const dotRpx = dotFont * 0.375;
+    const txOff = (dotRpx + 5) / CHART_W;
     return [
       {
-        x: 1.02, y: y,
+        x: 1.02, y: baseY,
         xref: 'paper', yref: 'paper',
-        xanchor: 'left', yanchor: 'middle',
+        xanchor: 'middle', yanchor: 'middle',
         showarrow: false,
         text: '●',
-        font: { size: v ** 0.33 * 4.5, color: '#94a3b8' },
+        font: { size: dotFont, color: '#94a3b8' },
       },
       {
-        x: 1.06, y: y,
+        x: 1.02 + txOff, y: baseY,
         xref: 'paper', yref: 'paper',
         xanchor: 'left', yanchor: 'middle',
         showarrow: false,

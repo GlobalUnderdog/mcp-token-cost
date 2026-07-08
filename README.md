@@ -53,7 +53,7 @@ Uses the standard heuristic of **1 token ≈ 4 characters** (English prose + JSO
 Run: `node --experimental-strip-types mcp-token-estimate.ts`
 
  | Server                 | Category         | Transport | Tools | Est. Tokens | Avg Tokens/Tool | Bytes   |
- |------------------------|------------------|-----------|-------|-------------|-----------------|---------|
+ |:-----------------------|:-----------------|:----------|------:|-------------:|----------------:|--------:|
  | Gmail                  | Google Workspace | HTTP      | 13    | 10,733      | 826             | 42,929  |
  | Google Drive           | Google Workspace | HTTP      | 8     | 5,669       | 709             | 22,674  |
  | Google Calendar        | Google Workspace | HTTP      | 8     | 17,851      | 2,231           | 71,402  |
