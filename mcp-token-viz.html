@@ -8,7 +8,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#fff;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:system-ui,-apple-system,sans-serif}
-#chart{width:1300px;max-width:98vw;height:950px}
+#chart{width:1350px;max-width:98vw;height:950px}
 </style>
 </head>
 <body>
@@ -39,7 +39,7 @@ const DATA = [
   {s:'M365 Calendar',     c:'Microsoft 365',     avg: 349,  tok:  5577},
 ];
 
-const CATS = ['Cloud', 'CRM', 'Analytics', 'Database', 'Developer Tools', 'Google Workspace', 'Microsoft 365'];
+const CATS = ['Cloud','CRM','Analytics','Database','Developer Tools','Google Workspace','Microsoft 365'];
 
 const COLORS = {
   'Cloud':             '#2563eb',
@@ -51,39 +51,45 @@ const COLORS = {
   'Microsoft 365':     '#dc2626',
 };
 
-// Y-position: categories as horizontal bands, Cloud at top
+// ── Y-position: categories as horizontal bands, Cloud at top ──
 const catBase = {};
 CATS.forEach((c, i) => { catBase[c] = (CATS.length - 1 - i) * 2.5 + 0.75; });
 
-// Power 0.4 transform compresses token range; floor at 14
-const ms = d => Math.max(Math.pow(d.tok, 0.4), 14);
+// ── Size: natural log of avg tokens per tool (diameter mode) ──
+const SIZEREF = 5.5;
+const sizeFn = d => Math.log(d.avg);
 
 DATA.forEach(d => {
   const group = DATA.filter(x => x.c === d.c);
   const idx = group.indexOf(d);
   const spread = group.length > 1 ? (idx / (group.length - 1) - 0.5) * 0.8 : 0;
   d.y = catBase[d.c] + spread;
-  d.sz = ms(d);
+  d.sz = sizeFn(d);
 });
 
-// ── Collision-aware label positioning ──
-const FONT_SZ = 13;
+// ── Collision-aware 2-line label positioning ──
+const FONT_SZ = 12;
+const LINE_GAP = 2;
+const TEXT_H = FONT_SZ * 2 + LINE_GAP;
 const CW = FONT_SZ * 0.58;
-const GAP = 4;
-const XR = [0, 6200];
+const GAP = 3;
+const XR_LOG = [2.4, 4.8];
 const YR = [0, 18];
-const PW = 1040;
-const PH = 820;  // 950 - 50 - 80
+const PW = 1040;   // 1350 - 80 - 230 (wider right margin)
+const PH = 805;
+const XR_SPAN = XR_LOG[1] - XR_LOG[0];
 
-function pxX(v) { return (v - XR[0]) / (XR[1] - XR[0]) * PW; }
+function pxX(v) { return (Math.log10(v) - XR_LOG[0]) / XR_SPAN * PW; }
 function pxY(v) { return (YR[1] - v) / (YR[1] - YR[0]) * PH; }
 
 DATA.forEach(d => {
-  d._px = pxX(d.avg);
+  d._px = pxX(d.tok);
   d._py = pxY(d.y);
-  d._mr = d.sz * 0.45 / 2;
-  d._tw = d.s.length * CW;
-  d._th = FONT_SZ;
+  d._mr = d.sz * SIZEREF / 2;
+  const stat = `${d.tok.toLocaleString()} tok · ${(d.tok/2000).toFixed(1)}%`;
+  d.label = `${d.s}<br>${stat}`;
+  d._tw = Math.max(d.s.length, stat.length) * CW;
+  d._th = TEXT_H;
   d._pos = 'top center';
 });
 
@@ -96,11 +102,10 @@ CATS.forEach(cat => {
       const a = items[i], b = items[j];
       if (a._pos !== 'top center' || b._pos !== 'top center') continue;
 
-      const aTop = a._py - a._mr - GAP;
-      const aBot = aTop + FONT_SZ;
-      const bTop = b._py - b._mr - GAP;
-      const bBot = bTop + FONT_SZ;
-
+      const aTop = a._py - a._mr - GAP - TEXT_H;
+      const aBot = a._py - a._mr - GAP;
+      const bTop = b._py - b._mr - GAP - TEXT_H;
+      const bBot = b._py - b._mr - GAP;
       const horizOverlap = Math.abs(a._px - b._px) < (a._tw + b._tw) / 2 + 2;
       const vertOverlap  = aBot > bTop && bBot > aTop;
 
@@ -113,8 +118,7 @@ CATS.forEach(cat => {
 
   for (const a of items) {
     if (a._pos !== 'bottom center') continue;
-    const aBot = a._py + a._mr + GAP + FONT_SZ;
-
+    const aBot = a._py + a._mr + GAP + TEXT_H;
     for (const b of items) {
       if (b === a || b._py <= a._py) continue;
       const bTop = b._py - b._mr;
@@ -127,12 +131,13 @@ CATS.forEach(cat => {
   }
 });
 
+// ── Main category traces ──
 const traces = CATS.map(cat => {
   const items = DATA.filter(d => d.c === cat);
   return {
-    x:           items.map(d => d.avg),
+    x:           items.map(d => d.tok),
     y:           items.map(d => d.y),
-    text:        items.map(d => d.s),
+    text:        items.map(d => d.label),
     textposition: items.map(d => d._pos),
     mode:        'markers+text',
     name:        cat,
@@ -140,7 +145,7 @@ const traces = CATS.map(cat => {
     hoverinfo:   'skip',
     marker: {
       size:      items.map(d => d.sz),
-      sizeref:   0.45,
+      sizeref:   SIZEREF,
       sizemode:  'diameter',
       color:     COLORS[cat],
       line:      { color: 'rgba(255,255,255,0.5)', width: 1 },
@@ -148,25 +153,62 @@ const traces = CATS.map(cat => {
   };
 });
 
+// ── Size reference annotations (right margin, stacked below legend) ──
+const sizeRefs = [200, 500, 2000, 5000];
+const sizeAnnos = [
+  {
+    x: 1.02, y: 0.70,
+    xref: 'paper', yref: 'paper',
+    xanchor: 'left', yanchor: 'middle',
+    showarrow: false,
+    text: '<b>Avg Tokens per Tool</b>',
+    font: { size: 11, color: '#475569' },
+    align: 'left',
+  },
+  ...sizeRefs.flatMap((v, i) => {
+    const y = 0.62 - i * 0.09;
+    return [
+      {
+        x: 1.02, y: y,
+        xref: 'paper', yref: 'paper',
+        xanchor: 'left', yanchor: 'middle',
+        showarrow: false,
+        text: '●',
+        font: { size: Math.log(v) * SIZEREF * 0.6, color: '#94a3b8' },
+      },
+      {
+        x: 1.06, y: y,
+        xref: 'paper', yref: 'paper',
+        xanchor: 'left', yanchor: 'middle',
+        showarrow: false,
+        text: `${v.toLocaleString()} · ${(v/2000).toFixed(1)}%`,
+        font: { size: 11, color: '#64748b' },
+      },
+    ];
+  }),
+];
+
 const layout = {
   title: {
-    text: 'MCP Server Token Cost',
+    text: 'MCP Server Token Cost<br><span style="font-size:12px;color:#64748b;font-weight:400">Circle size ∝ avg tokens per tool (log). Labels show total tokens and % of Sonnet 4.5 200K window.</span>',
     font: { size: 20, color: '#0f172a' },
     x: 0.5,
   },
   xaxis: {
-    title: { text: 'Average Tokens per Tool', font: { color: '#475569', size: 13 } },
-    range: XR,
+    title: { text: 'Total Tokens (log scale) &nbsp;→&nbsp; % of Sonnet 4.5 200K window', font: { color: '#475569', size: 12 } },
+    type: 'log',
+    range: XR_LOG,
     gridcolor:  '#e2e8f0',
     zerolinecolor: '#cbd5e1',
     tickfont: { color: '#64748b' },
+    tickformat: ',.0f',
     separatethousands: true,
   },
   yaxis: {
     showticklabels: false,
+    range: YR,
     gridcolor:  '#e2e8f0',
     zeroline:   false,
-    tickfont: { color: '#64748b' },
   },
   plot_bgcolor:  '#f8fafc',
   paper_bgcolor: '#ffffff',
@@ -177,10 +219,11 @@ const layout = {
     bgcolor:  'rgba(255,255,255,0.9)',
     bordercolor: '#e2e8f0',
     x: 1.02,
-    y: 0.5,
-    yanchor: 'middle',
+    y: 0.96,
+    yanchor: 'top',
   },
-  margin: { l: 60, r: 150, t: 50, b: 80 },
+  margin: { l: 60, r: 230, t: 65, b: 80 },
+  annotations: sizeAnnos,
 };
 
 Plotly.newPlot('chart', traces, layout, {
