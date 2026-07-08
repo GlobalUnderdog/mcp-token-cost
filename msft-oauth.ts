@@ -26,6 +26,8 @@
  *   MSFT_MCP_SCOPE     - optional; resource "/.default" scope (has a default)
  */
 
+import { readFile, writeFile } from "node:fs/promises"
+
 import {
   ConfidentialClientApplication,
   PublicClientApplication,
@@ -39,6 +41,15 @@ import {
  * URI (e.g. a GUID like "api://<guid>/.default").
  */
 const DEFAULT_SCOPE = "https://agent365.svc.cloud.microsoft/.default"
+const TOKEN_CACHE_FILE = ".msft-token-cache.json"
+const TOKEN_EXPIRY_SKEW_MS = 5 * 60_000
+
+type CachedMicrosoftToken = {
+  accessToken: string
+  expiresAt: number
+}
+
+type MicrosoftTokenCache = Record<string, CachedMicrosoftToken>
 
 function requireEnv(name: string): string {
   const value = process.env[name]
@@ -52,6 +63,28 @@ function authority(): string {
 
 function scopes(): string[] {
   return [process.env.MSFT_MCP_SCOPE || DEFAULT_SCOPE]
+}
+
+function tokenCacheKey(scopeList: string[]): string {
+  return [
+    requireEnv("MSFT_TENANT_ID"),
+    requireEnv("MSFT_CLIENT_ID"),
+    ...scopeList.slice().sort(),
+  ].join("|")
+}
+
+async function readTokenCache(): Promise<MicrosoftTokenCache> {
+  try {
+    const parsed = JSON.parse(await readFile(TOKEN_CACHE_FILE, "utf8"))
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {}
+    return parsed as MicrosoftTokenCache
+  } catch {
+    return {}
+  }
+}
+
+async function writeTokenCache(cache: MicrosoftTokenCache): Promise<void> {
+  await writeFile(TOKEN_CACHE_FILE, JSON.stringify(cache, null, 2), { mode: 0o600 })
 }
 
 const loggerOptions = {
@@ -130,12 +163,27 @@ function publicClient(): PublicClientApplication {
 export async function getMicrosoftMcpTokenDeviceCode(
   scopeOverride?: string[],
 ): Promise<string> {
+  const requestedScopes = scopeOverride ?? scopes()
+  const cache = await readTokenCache()
+  const cacheKey = tokenCacheKey(requestedScopes)
+  const cached = cache[cacheKey]
+  if (cached && cached.expiresAt > Date.now() + TOKEN_EXPIRY_SKEW_MS) {
+    return cached.accessToken
+  }
+
   const result = await publicClient().acquireTokenByDeviceCode({
-    scopes: scopeOverride ?? scopes(),
+    scopes: requestedScopes,
     deviceCodeCallback: (response) => console.error(response.message),
   })
   if (!result?.accessToken) {
     throw new Error("MSAL returned no access token for device-code request")
   }
+
+  cache[cacheKey] = {
+    accessToken: result.accessToken,
+    expiresAt: result.expiresOn?.getTime() ?? Date.now() + 50 * 60_000,
+  }
+  await writeTokenCache(cache)
+
   return result.accessToken
 }
