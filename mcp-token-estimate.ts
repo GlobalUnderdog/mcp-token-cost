@@ -60,6 +60,7 @@ function microsoftMcpServer(
 const SERVERS: ServerSpec[] = [
   // Remote (Streamable HTTP)
   // Google
+  { name: "Gmail", remote: "https://gmailmcp.googleapis.com/mcp/v1" },
   { name: "Google Drive", remote: "https://drivemcp.googleapis.com/mcp/v1" },
   { name: "Google Calendar", remote: "https://calendarmcp.googleapis.com/mcp/v1" },
   { name: "Google People API", remote: "https://people.googleapis.com/mcp/v1" },

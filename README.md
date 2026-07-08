@@ -1,7 +1,8 @@
 # MCP Token Cost
-
+ 
 Estimate how many tokens each MCP server's tool definitions would consume if loaded into a model's context. This helps with context-window budgeting when choosing which MCP servers to include in a session.
-
+ 
+Currently probes **5 Google Workspace MCP servers** (Gmail, Drive, Calendar, Chat, People API) plus a mix of popular stdio and HTTP servers.
 ## How It Works
 
 Each MCP server exposes a `tools/list` RPC method that returns its tool definitions — names, descriptions, and input schemas. When a model loads a server, these definitions are serialized into the prompt as JSON and counted against the context window.
@@ -50,20 +51,21 @@ Uses the standard heuristic of **1 token ≈ 4 characters** (English prose + JSO
 
 Run: `node --experimental-strip-types mcp-token-estimate.ts`
 
-| Server | Transport | Tools | Est. Tokens | Avg Tokens/Tool | Bytes |
-|---|---|---|---|---|---|
-| Google Drive | HTTP | 8 | 5,669 | 709 | 22,674 |
-| Google Calendar | HTTP | 8 | 17,847 | 2,231 | 71,388 |
-| Google People API | HTTP | 3 | 1,119 | 373 | 4,475 |
-| Google Chat | HTTP | 4 | 4,951 | 1,238 | 19,801 |
-| AWS | stdio | 9 | 5,200 | 578 | 20,798 |
-| Salesforce | stdio | 12 | 5,863 | 489 | 23,451 |
-| Google Cloud | stdio | 1 | 539 | 539 | 2,153 |
-| Azure | stdio | 66 | 20,500 | 311 | 81,999 |
-| MongoDB | stdio | 16 | 4,530 | 283 | 18,119 |
-| Grep | HTTP | 1 | 741 | 741 | 2,964 |
-| Context7 | HTTP | 2 | 1,229 | 615 | 4,916 |
-| Serena | stdio | 29 | 9,339 | 322 | 37,355 |
+ | Server | Transport | Tools | Est. Tokens | Avg Tokens/Tool | Bytes |
+ |---|---|---|---|---|---|
+ | Gmail | HTTP | 13 | 10,733 | 826 | 42,929 |
+ | Google Drive | HTTP | 8 | 5,669 | 709 | 22,674 |
+ | Google Calendar | HTTP | 8 | 17,851 | 2,231 | 71,402 |
+ | Google People API | HTTP | 3 | 1,119 | 373 | 4,475 |
+ | Google Chat | HTTP | 4 | 4,951 | 1,238 | 19,801 |
+ | AWS | stdio | 9 | 5,200 | 578 | 20,798 |
+ | Salesforce | stdio | 12 | 5,863 | 489 | 23,451 |
+ | Google Cloud | stdio | 1 | 539 | 539 | 2,153 |
+ | Azure | stdio | 66 | 20,500 | 311 | 81,999 |
+ | MongoDB | stdio | 16 | 4,530 | 283 | 18,119 |
+ | Grep | HTTP | 1 | 741 | 741 | 2,964 |
+ | Context7 | HTTP | 2 | 1,229 | 615 | 4,916 |
+ | Serena | stdio | 29 | 9,339 | 322 | 37,355 |
 
 ### Key observations
 
@@ -72,6 +74,7 @@ Run: `node --experimental-strip-types mcp-token-estimate.ts`
 - **Google Cloud** and **Grep** are the lightest: a single tool each, ~0.5K and ~0.7K tokens respectively.
 - **Google Calendar** has dense input schemas: only 8 tools but averaging 2,231 tokens each (second-highest total).
 - **Context7** is lightweight at 2 tools and ~1.2K tokens, despite fetching potentially large documentation payloads at runtime.
+- **Gmail** exposes 13 tools (more than the 10 documented on the page — the live `tools/list` reveals additional `list_drafts`, `label_thread`, and `unlabel_thread`), totaling ~10.7K tokens and 43KB. Its 826 avg tokens/tool is moderate among the Google services.
 - **Grep** (from [Vercel's blog post](https://vercel.com/blog/grep-a-million-github-repositories-via-mcp)) exposes a single code-search tool, adding only ~741 tokens of schema overhead for access to 1M+ GitHub repositories.
 - Most stdio servers stay under 6K tokens total, with Azure and Serena being the exceptions.
 
