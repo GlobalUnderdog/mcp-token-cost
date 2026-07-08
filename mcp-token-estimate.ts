@@ -58,80 +58,80 @@ function microsoftMcpServer(
 
 // Hardcoded list of MCP servers to prospect. Edit freely.
 const SERVERS: ServerSpec[] = [
-  // // Remote (Streamable HTTP)
-  // // Google
-  // { name: "Google Drive", remote: "https://drivemcp.googleapis.com/mcp/v1" },
-  // { name: "Google Calendar", remote: "https://calendarmcp.googleapis.com/mcp/v1" },
-  // { name: "Google People API", remote: "https://people.googleapis.com/mcp/v1" },
-  // { name: "Google Chat", remote: "https://chatmcp.googleapis.com/mcp/v1" },
-  //
-  // // Box (Requires Auth)
-  // // "https://mcp.box.com",
-  //
-  // // Dropbox (No official MCP)
-  //
-  // // Slack (Requires Auth)
-  // // "https://mcp.slack.com/mcp",
-  //
-  // // Canva (Requires Auth)
-  // // "https://mcp.canva.com/mcp",
-  //
-  // // Todoist (Requires Auth)
-  // // "https://ai.todoist.net/mcp",
-  //
-  // // HubSpot (Requires Auth)
-  // // "https://mcp.hubspot.com",
-  //
-  // // GitHub (Requires Auth)
-  // // "https://api.githubcopilot.com/mcp",
-  //
-  // // Snowflake (No official MCP)
-  //
-  // // Postgres (No official MCP)
-  //
-  // // Local (stdio)
-  // // AWS
-  // {
-  //   name: "AWS",
-  //   command: "uvx",
-  //   args: [
-  //     "mcp-proxy-for-aws==1.6.0",
-  //     "https://aws-mcp.us-east-1.api.aws/mcp",
-  //     "--metadata",
-  //     "AWS_REGION=us-west-2",
-  //   ],
-  // },
-  //
-  // // Salesforce
-  // {
-  //   name: "Salesforce",
-  //   command: "npx",
-  //   args: [
-  //     "-y",
-  //     "@salesforce/mcp",
-  //     "--orgs",
-  //     "DEFAULT_TARGET_ORG",
-  //     "--toolsets",
-  //     "orgs,metadata,data,users",
-  //     "--tools",
-  //     "run_apex_test",
-  //     "--allow-non-ga-tools",
-  //   ],
-  // },
-  //
-  // // Google Cloud
-  // {
-  //   name: "Google Cloud",
-  //   command: "npx",
-  //   args: ["-y", "@google-cloud/gcloud-mcp"],
-  // },
-  //
-  // // Azure
-  // {
-  //   name: "Azure",
-  //   command: "npx",
-  //   args: ["-y", "@azure/mcp@latest", "server", "start"],
-  // },
+  // Remote (Streamable HTTP)
+  // Google
+  { name: "Google Drive", remote: "https://drivemcp.googleapis.com/mcp/v1" },
+  { name: "Google Calendar", remote: "https://calendarmcp.googleapis.com/mcp/v1" },
+  { name: "Google People API", remote: "https://people.googleapis.com/mcp/v1" },
+  { name: "Google Chat", remote: "https://chatmcp.googleapis.com/mcp/v1" },
+
+  // Box (Requires Auth)
+  // "https://mcp.box.com",
+
+  // Dropbox (No official MCP)
+
+  // Slack (Requires Auth)
+  // "https://mcp.slack.com/mcp",
+
+  // Canva (Requires Auth)
+  // "https://mcp.canva.com/mcp",
+
+  // Todoist (Requires Auth)
+  // "https://ai.todoist.net/mcp",
+
+  // HubSpot (Requires Auth)
+  // "https://mcp.hubspot.com",
+
+  // GitHub (Requires Auth)
+  // "https://api.githubcopilot.com/mcp",
+
+  // Snowflake (No official MCP)
+
+  // Postgres (No official MCP)
+
+  // Local (stdio)
+  // AWS
+  {
+    name: "AWS",
+    command: "uvx",
+    args: [
+      "mcp-proxy-for-aws==1.6.0",
+      "https://aws-mcp.us-east-1.api.aws/mcp",
+      "--metadata",
+      "AWS_REGION=us-west-2",
+    ],
+  },
+
+  // Salesforce
+  {
+    name: "Salesforce",
+    command: "npx",
+    args: [
+      "-y",
+      "@salesforce/mcp",
+      "--orgs",
+      "DEFAULT_TARGET_ORG",
+      "--toolsets",
+      "orgs,metadata,data,users",
+      "--tools",
+      "run_apex_test",
+      "--allow-non-ga-tools",
+    ],
+  },
+
+  // Google Cloud
+  {
+    name: "Google Cloud",
+    command: "npx",
+    args: ["-y", "@google-cloud/gcloud-mcp"],
+  },
+
+  // Azure
+  {
+    name: "Azure",
+    command: "npx",
+    args: ["-y", "@azure/mcp@latest", "server", "start"],
+  },
 
   // Microsoft agent365 MCPs require {tenantId} in the URL and a delegated
   // McpServers.<Service>.All scope in the access token.
@@ -143,14 +143,14 @@ const SERVERS: ServerSpec[] = [
   microsoftMcpServer("Microsoft 365 Calendar", "mcp_CalendarTools"),
 
   // MongoDB
-  // {
-  //   name: "MongoDB",
-  //   command: "npx",
-  //   args: ["-y", "mongodb-mcp-server@latest", "--readOnly"],
-  //   env: {
-  //     MDB_MCP_CONNECTION_STRING: "mongodb://localhost:27017/myDatabase",
-  //   },
-  // },
+  {
+    name: "MongoDB",
+    command: "npx",
+    args: ["-y", "mongodb-mcp-server@latest", "--readOnly"],
+    env: {
+      MDB_MCP_CONNECTION_STRING: "mongodb://localhost:27017/myDatabase",
+    },
+  },
 ]
 
 const PROTOCOL_VERSION = "2025-06-18"
