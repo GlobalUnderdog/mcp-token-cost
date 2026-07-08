@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP Token Cost</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#fff;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:system-ui,-apple-system,sans-serif}
+#chart{width:1300px;max-width:98vw;height:950px}
+</style>
+</head>
+<body>
+<div id="chart"></div>
+<script>
+const DATA = [
+  {s:'AWS',               c:'Cloud',             avg: 578,  tok:  5200},
+  {s:'Google Cloud',      c:'Cloud',             avg: 539,  tok:   539},
+  {s:'Azure',             c:'Cloud',             avg: 311,  tok: 20500},
+  {s:'Salesforce',        c:'CRM',               avg: 489,  tok:  5863},
+  {s:'Google Analytics',  c:'Analytics',         avg:1510,  tok: 13591},
+  {s:'Redshift',          c:'Database',          avg:1116,  tok:  6694},
+  {s:'MongoDB',           c:'Database',          avg: 264,  tok:  4759},
+  {s:'BigQuery',          c:'Database',          avg:5486,  tok: 32914},
+  {s:'Grep',              c:'Developer Tools',   avg: 741,  tok:   741},
+  {s:'Context7',          c:'Developer Tools',   avg: 615,  tok:  1229},
+  {s:'Serena',            c:'Developer Tools',   avg: 315,  tok:  9444},
+  {s:'Gmail',             c:'Google Workspace',  avg: 826,  tok: 10733},
+  {s:'Google Drive',      c:'Google Workspace',  avg: 709,  tok:  5669},
+  {s:'Google Calendar',   c:'Google Workspace',  avg:2231,  tok: 17851},
+  {s:'Google People API', c:'Google Workspace',  avg: 373,  tok:  1119},
+  {s:'Google Chat',       c:'Google Workspace',  avg:1238,  tok:  4951},
+  {s:'Microsoft Word',    c:'Microsoft 365',     avg: 179,  tok:   716},
+  {s:'Microsoft OneDrive',c:'Microsoft 365',     avg: 181,  tok:  3433},
+  {s:'Microsoft SharePoint',c:'Microsoft 365',   avg: 391,  tok: 14065},
+  {s:'Microsoft Teams',   c:'Microsoft 365',     avg: 335,  tok: 12065},
+  {s:'M365 User',         c:'Microsoft 365',     avg: 252,  tok:  1259},
+  {s:'M365 Calendar',     c:'Microsoft 365',     avg: 349,  tok:  5577},
+];
+
+const CATS = ['Cloud', 'CRM', 'Analytics', 'Database', 'Developer Tools', 'Google Workspace', 'Microsoft 365'];
+
+const COLORS = {
+  'Cloud':             '#2563eb',
+  'CRM':               '#db2777',
+  'Analytics':         '#7c3aed',
+  'Database':          '#059669',
+  'Developer Tools':   '#d97706',
+  'Google Workspace':  '#0d9488',
+  'Microsoft 365':     '#dc2626',
+};
+
+// Y-position: categories as horizontal bands, Cloud at top
+const catBase = {};
+CATS.forEach((c, i) => { catBase[c] = (CATS.length - 1 - i) * 2.5 + 0.75; });
+
+// Power 0.4 transform compresses token range; floor at 14
+const ms = d => Math.max(Math.pow(d.tok, 0.4), 14);
+
+DATA.forEach(d => {
+  const group = DATA.filter(x => x.c === d.c);
+  const idx = group.indexOf(d);
+  const spread = group.length > 1 ? (idx / (group.length - 1) - 0.5) * 0.8 : 0;
+  d.y = catBase[d.c] + spread;
+  d.sz = ms(d);
+});
+
+// ── Collision-aware label positioning ──
+const FONT_SZ = 13;
+const CW = FONT_SZ * 0.58;
+const GAP = 4;
+const XR = [0, 6200];
+const YR = [0, 18];
+const PW = 1040;
+const PH = 820;  // 950 - 50 - 80
+
+function pxX(v) { return (v - XR[0]) / (XR[1] - XR[0]) * PW; }
+function pxY(v) { return (YR[1] - v) / (YR[1] - YR[0]) * PH; }
+
+DATA.forEach(d => {
+  d._px = pxX(d.avg);
+  d._py = pxY(d.y);
+  d._mr = d.sz * 0.45 / 2;
+  d._tw = d.s.length * CW;
+  d._th = FONT_SZ;
+  d._pos = 'top center';
+});
+
+CATS.forEach(cat => {
+  const items = DATA.filter(d => d.c === cat);
+  items.sort((a, b) => a._px - b._px);
+
+  for (let i = 0; i < items.length; i++) {
+    for (let j = i + 1; j < items.length; j++) {
+      const a = items[i], b = items[j];
+      if (a._pos !== 'top center' || b._pos !== 'top center') continue;
+
+      const aTop = a._py - a._mr - GAP;
+      const aBot = aTop + FONT_SZ;
+      const bTop = b._py - b._mr - GAP;
+      const bBot = bTop + FONT_SZ;
+
+      const horizOverlap = Math.abs(a._px - b._px) < (a._tw + b._tw) / 2 + 2;
+      const vertOverlap  = aBot > bTop && bBot > aTop;
+
+      if (horizOverlap && vertOverlap) {
+        if (a._py > b._py) a._pos = 'bottom center';
+        else               b._pos = 'bottom center';
+      }
+    }
+  }
+
+  for (const a of items) {
+    if (a._pos !== 'bottom center') continue;
+    const aBot = a._py + a._mr + GAP + FONT_SZ;
+
+    for (const b of items) {
+      if (b === a || b._py <= a._py) continue;
+      const bTop = b._py - b._mr;
+      const horiz = Math.abs(a._px - b._px) < a._tw / 2 + b._mr;
+      if (horiz && aBot > bTop) {
+        a._pos = 'top center';
+        break;
+      }
+    }
+  }
+});
+
+const traces = CATS.map(cat => {
+  const items = DATA.filter(d => d.c === cat);
+  return {
+    x:           items.map(d => d.avg),
+    y:           items.map(d => d.y),
+    text:        items.map(d => d.s),
+    textposition: items.map(d => d._pos),
+    mode:        'markers+text',
+    name:        cat,
+    textfont:    { color: '#1e293b', size: FONT_SZ },
+    hoverinfo:   'skip',
+    marker: {
+      size:      items.map(d => d.sz),
+      sizeref:   0.45,
+      sizemode:  'diameter',
+      color:     COLORS[cat],
+      line:      { color: 'rgba(255,255,255,0.5)', width: 1 },
+    },
+  };
+});
+
+const layout = {
+  title: {
+    text: 'MCP Server Token Cost',
+    font: { size: 20, color: '#0f172a' },
+    x: 0.5,
+  },
+  xaxis: {
+    title: { text: 'Average Tokens per Tool', font: { color: '#475569', size: 13 } },
+    range: XR,
+    gridcolor:  '#e2e8f0',
+    zerolinecolor: '#cbd5e1',
+    tickfont: { color: '#64748b' },
+    separatethousands: true,
+  },
+  yaxis: {
+    showticklabels: false,
+    gridcolor:  '#e2e8f0',
+    zeroline:   false,
+    tickfont: { color: '#64748b' },
+  },
+  plot_bgcolor:  '#f8fafc',
+  paper_bgcolor: '#ffffff',
+  font: { color: '#334155' },
+  showlegend: true,
+  legend: {
+    font: { size: 12, color: '#334155' },
+    bgcolor:  'rgba(255,255,255,0.9)',
+    bordercolor: '#e2e8f0',
+    x: 1.02,
+    y: 0.5,
+    yanchor: 'middle',
+  },
+  margin: { l: 60, r: 150, t: 50, b: 80 },
+};
+
+Plotly.newPlot('chart', traces, layout, {
+  responsive: true,
+  displayModeBar: false,
+});
+</script>
+</body>
+</html>
