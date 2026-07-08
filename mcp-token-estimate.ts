@@ -20,6 +20,8 @@
 
 import { spawn } from "node:child_process"
 
+import {  getMicrosoftMcpTokenDeviceCode,} from "./msft-oauth.ts"
+
 type StdioSpec = {
   name: string
   command: string
@@ -31,9 +33,28 @@ type RemoteSpec = {
   name: string
   remote: string
   headers?: Record<string, string>
+  /**
+   * Optional async auth resolver, invoked once before the handshake. Returns
+   * extra headers (e.g. `Authorization`) merged into every request for this
+   * server. Kept lazy so servers that don't need auth never trigger a sign-in.
+   */
+  auth?: () => Promise<Record<string, string>>
 }
 
 type ServerSpec = StdioSpec | RemoteSpec
+
+function microsoftMcpServer(
+  name: string,
+  serverId: string,
+): RemoteSpec {
+  return {
+    name,
+    remote: `https://agent365.svc.cloud.microsoft/agents/tenants/${process.env.MSFT_TENANT_ID}/servers/${serverId}`,
+    auth: async () => ({
+      Authorization: `Bearer ${await getMicrosoftMcpTokenDeviceCode()}`,
+    }),
+  }
+}
 
 // Hardcoded list of MCP servers to prospect. Edit freely.
 const SERVERS: ServerSpec[] = [
@@ -112,7 +133,14 @@ const SERVERS: ServerSpec[] = [
     args: ["-y", "@azure/mcp@latest", "server", "start"],
   },
 
-  // All other Microsoft MCPs require {tenantId} as part of the url
+  // Microsoft agent365 MCPs require {tenantId} in the URL and a delegated
+  // McpServers.<Service>.All scope in the access token.
+  microsoftMcpServer("Microsoft Word", "mcp_WordServer", ),
+  microsoftMcpServer("Microsoft OneDrive","mcp_OneDriveRemoteServer"),
+  microsoftMcpServer("Microsoft SharePoint","mcp_SharePointRemoteServer"),
+  microsoftMcpServer("Microsoft Teams", "mcp_TeamsServer"),
+  microsoftMcpServer("Microsoft 365 User", "mcp_MeServer"),
+  microsoftMcpServer("Microsoft 365 Calendar", "mcp_CalendarTools"),
 
   // MongoDB
   {
@@ -248,6 +276,13 @@ async function httpRpc(
 }
 
 async function fetchToolsHttp(spec: RemoteSpec): Promise<Tool[]> {
+  // Resolve auth once (e.g. acquire an OAuth token) and fold it into headers so
+  // every request in the handshake carries it.
+  if (spec.auth) {
+    const authHeaders = await spec.auth()
+    spec = { ...spec, headers: { ...spec.headers, ...authHeaders } }
+  }
+
   const init = await httpRpc(spec, "initialize", initializeParams, 1)
   if (!init.res.ok) {
     throw new Error(`initialize failed: HTTP ${init.res.status} ${init.res.statusText}`)
@@ -388,6 +423,7 @@ async function main() {
         bytes: serialized.length,
       })
     } catch (err) {
+      console.error(err)
       rows.push({
         server,
         transport: isStdio(spec) ? "stdio" : "http",
