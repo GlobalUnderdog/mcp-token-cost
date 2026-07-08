@@ -29,18 +29,15 @@
 import { readFile, writeFile } from "node:fs/promises"
 
 import {
-  ConfidentialClientApplication,
   PublicClientApplication,
   LogLevel,
-  type Configuration,
 } from "@azure/msal-node"
 
-/**
- * The `<resource>/.default` scope for the agent365 MCP resource. Override via
- * MSFT_MCP_SCOPE if your tenant exposes the resource under a different app ID
- * URI (e.g. a GUID like "api://<guid>/.default").
- */
-const DEFAULT_SCOPE = "https://agent365.svc.cloud.microsoft/.default"
+// Requesting scopes for all MCP servers that we want to estimate
+// Since this is just a testing app, there is no problem in over-requesting
+const MCP_SCOPES = [
+  "https://agent365.svc.cloud.microsoft/McpServers.Word.All"
+]
 const TOKEN_CACHE_FILE = ".msft-token-cache.json"
 const TOKEN_EXPIRY_SKEW_MS = 5 * 60_000
 
@@ -59,10 +56,6 @@ function requireEnv(name: string): string {
 
 function authority(): string {
   return `https://login.microsoftonline.com/${requireEnv("MSFT_TENANT_ID")}`
-}
-
-function scopes(): string[] {
-  return [process.env.MSFT_MCP_SCOPE || DEFAULT_SCOPE]
 }
 
 function tokenCacheKey(scopeList: string[]): string {
@@ -96,41 +89,6 @@ const loggerOptions = {
 }
 
 // ---------------------------------------------------------------------------
-// Client credentials (app-only) — default
-// ---------------------------------------------------------------------------
-
-let cca: ConfidentialClientApplication | undefined
-
-function confidentialClient(): ConfidentialClientApplication {
-  if (!cca) {
-    const config: Configuration = {
-      auth: {
-        clientId: requireEnv("MSFT_CLIENT_ID"),
-        authority: authority(),
-        clientSecret: requireEnv("MSFT_CLIENT_SECRET"),
-      },
-      system: { loggerOptions },
-    }
-    cca = new ConfidentialClientApplication(config)
-  }
-  return cca
-}
-
-/**
- * Acquire an app-only access token. MSAL caches the token in-memory and returns
- * the cached value until it nears expiry, so this is cheap to call repeatedly.
- */
-export async function getMicrosoftMcpToken(): Promise<string> {
-  const result = await confidentialClient().acquireTokenByClientCredential({
-    scopes: scopes(),
-  })
-  if (!result?.accessToken) {
-    throw new Error("MSAL returned no access token for client-credentials request")
-  }
-  return result.accessToken
-}
-
-// ---------------------------------------------------------------------------
 // Device code (delegated / user-context) — fallback
 // ---------------------------------------------------------------------------
 
@@ -150,20 +108,14 @@ function publicClient(): PublicClientApplication {
 }
 
 /**
- * Fallback for servers that reject app-only tokens: prints a URL + code to the
- * terminal for the user to approve in any browser, then returns a delegated
- * token. Use *delegated* scopes here (e.g. the resource's user-scoped
- * permission), not "/.default". Requires "Allow public client flows" enabled on
- * the app registration.
+ * Work IQ servers need a *delegated* user token carrying the server's scope
+ * (app-only tokens are rejected with 403 "Scope 'McpServers.Word.All' is
+ * not present"). Device-code prints a URL+code to approve in a browser.
  *
- * Pass `scopeOverride` to request a specific delegated scope (e.g.
- * `https://agent365.svc.cloud.microsoft/McpServers.Word.All`). This also
- * triggers interactive consent for exactly that scope on first sign-in.
+ * This also triggers interactive consent for exactly that scope on first sign-in.
  */
-export async function getMicrosoftMcpTokenDeviceCode(
-  scopeOverride?: string[],
-): Promise<string> {
-  const requestedScopes = scopeOverride ?? scopes()
+export async function getMicrosoftMcpTokenDeviceCode(): Promise<string> {
+  const requestedScopes = MCP_SCOPES
   const cache = await readTokenCache()
   const cacheKey = tokenCacheKey(requestedScopes)
   const cached = cache[cacheKey]

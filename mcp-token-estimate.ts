@@ -124,13 +124,8 @@ const SERVERS: ServerSpec[] = [
   {
     name: "Microsoft Word",
     remote: `https://agent365.svc.cloud.microsoft/agents/tenants/${process.env.MSFT_TENANT_ID}/servers/mcp_WordServer`,
-    // Work IQ servers need a *delegated* user token carrying the server's scope
-    // (app-only tokens are rejected with 403 "Scope 'McpServers.Word.All' is
-    // not present"). Device-code prints a URL+code to approve in a browser.
     auth: async () => ({
-      Authorization: `Bearer ${await getMicrosoftMcpTokenDeviceCode([
-        "https://agent365.svc.cloud.microsoft/McpServers.Word.All",
-      ])}`,
+      Authorization: `Bearer ${await getMicrosoftMcpTokenDeviceCode()}`,
     }),
   },
 
