@@ -64,7 +64,7 @@ Run: `node --experimental-strip-types mcp-token-estimate.ts`
  | Google Cloud           | Cloud            | stdio     | 1     | 539         | 539             | 2,153   |
  | Azure                  | Cloud            | stdio     | 66    | 20,500      | 311             | 81,999  |
  | Redshift               | Database         | stdio     | 6     | 6,694       | 1,116           | 26,775  |
- | Google Analytics       | Analytics        | stdio     | 9     | 13,591      | 1,510           | 54,363  |
+ | Google Analytics       | Database         | stdio     | 9     | 13,591      | 1,510           | 54,363  |
  | Microsoft Word         | Microsoft 365    | HTTP      | 4     | 716         | 179             | 2,862   |
  | Microsoft OneDrive     | Microsoft 365    | HTTP      | 19    | 3,433       | 181             | 13,731  |
  | Microsoft SharePoint   | Microsoft 365    | HTTP      | 36    | 14,065      | 391             | 56,260  |
