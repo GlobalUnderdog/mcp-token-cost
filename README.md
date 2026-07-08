@@ -2,8 +2,7 @@
  
 Estimate how many tokens each MCP server's tool definitions would consume if loaded into a model's context. This helps with context-window budgeting when choosing which MCP servers to include in a session.
  
-Currently probes **Google Workspace** (Gmail, Drive, Calendar, Chat, People API), **Microsoft 365** (Word, OneDrive, SharePoint, Teams, User, Calendar), **BigQuery**, **Google Analytics**, **Redshift**, plus a mix of popular stdio and HTTP servers.
-
+Currently probes **Google Workspace** (Gmail, Drive, Calendar, Chat, People API), **BigQuery**, **Google Analytics**, **Redshift**, plus a mix of popular stdio and HTTP servers.
 ## How It Works
 
 Each MCP server exposes a `tools/list` RPC method that returns its tool definitions — names, descriptions, and input schemas. When a model loads a server, these definitions are serialized into the prompt as JSON and counted against the context window.
@@ -52,46 +51,38 @@ Uses the standard heuristic of **1 token ≈ 4 characters** (English prose + JSO
 
 Run: `node --experimental-strip-types mcp-token-estimate.ts`
 
- | Server                 | Category         | Transport | Tools | Est. Tokens | Avg Tokens/Tool | Bytes   |
- |------------------------|------------------|-----------|-------|-------------|-----------------|---------|
- | Gmail                  | Google Workspace | HTTP      | 13    | 10,733      | 826             | 42,929  |
- | Google Drive           | Google Workspace | HTTP      | 8     | 5,669       | 709             | 22,674  |
- | Google Calendar        | Google Workspace | HTTP      | 8     | 17,851      | 2,231           | 71,402  |
- | Google People API      | Google Workspace | HTTP      | 3     | 1,119       | 373             | 4,475   |
- | Google Chat            | Google Workspace | HTTP      | 4     | 4,951       | 1,238           | 19,801  |
- | AWS                    | Cloud            | stdio     | 9     | 5,200       | 578             | 20,798  |
- | Salesforce             | CRM              | stdio     | 12    | 5,863       | 489             | 23,451  |
- | Google Cloud           | Cloud            | stdio     | 1     | 539         | 539             | 2,153   |
- | Azure                  | Cloud            | stdio     | 66    | 20,500      | 311             | 81,999  |
- | Redshift               | Database         | stdio     | 6     | 6,694       | 1,116           | 26,775  |
- | Google Analytics       | Analytics        | stdio     | 9     | 13,591      | 1,510           | 54,363  |
- | Microsoft Word         | Microsoft 365    | HTTP      | 4     | 716         | 179             | 2,862   |
- | Microsoft OneDrive     | Microsoft 365    | HTTP      | 19    | 3,433       | 181             | 13,731  |
- | Microsoft SharePoint   | Microsoft 365    | HTTP      | 36    | 14,065      | 391             | 56,260  |
- | Microsoft Teams        | Microsoft 365    | HTTP      | 36    | 12,065      | 335             | 48,259  |
- | Microsoft 365 User     | Microsoft 365    | HTTP      | 5     | 1,259       | 252             | 5,035   |
- | Microsoft 365 Calendar | Microsoft 365    | HTTP      | 16    | 5,577       | 349             | 22,305  |
- | MongoDB                | Database         | stdio     | 18    | 4,759       | 264             | 19,034  |
- | Grep                   | Developer Tools  | HTTP      | 1     | 741         | 741             | 2,964   |
- | Context7               | Developer Tools  | HTTP      | 2     | 1,229       | 615             | 4,916   |
- | Serena                 | Developer Tools  | stdio     | 30    | 9,444       | 315             | 37,775  |
- | BigQuery               | Database         | HTTP      | 6     | 32,914      | 5,486           | 131,655 |
+ | Server | Category | Transport | Tools | Est. Tokens | Avg Tokens/Tool | Bytes |
+ |---|---|---|---|---|---|---|
+ | AWS | Cloud | stdio | 9 | 5,200 | 578 | 20,798 |
+ | Google Cloud | Cloud | stdio | 1 | 539 | 539 | 2,153 |
+ | Azure | Cloud | stdio | 66 | 20,500 | 311 | 81,999 |
+ | Salesforce | CRM | stdio | 12 | 5,863 | 489 | 23,451 |
+ | Google Analytics | Database | stdio | 9 | 13,591 | 1,510 | 54,363 |
+ | BigQuery | Database | HTTP | 6 | 32,914 | 5,486 | 131,655 |
+ | Redshift | Database | stdio | 6 | 6,694 | 1,116 | 26,775 |
+ | MongoDB | Database | stdio | 16 | 4,530 | 283 | 18,119 |
+ | Grep | Developer Tools | HTTP | 1 | 741 | 741 | 2,964 |
+ | Context7 | Developer Tools | HTTP | 2 | 1,229 | 615 | 4,916 |
+ | Serena | Developer Tools | stdio | 29 | 9,339 | 322 | 37,355 |
+ | Gmail | Google Workspace | HTTP | 13 | 10,733 | 826 | 42,929 |
+ | Google Drive | Google Workspace | HTTP | 8 | 5,669 | 709 | 22,674 |
+ | Google Calendar | Google Workspace | HTTP | 8 | 17,851 | 2,231 | 71,402 |
+ | Google People API | Google Workspace | HTTP | 3 | 1,119 | 373 | 4,475 |
+ | Google Chat | Google Workspace | HTTP | 4 | 4,951 | 1,238 | 19,801 |
 
 ### Key observations
 
 - **BigQuery** is the heaviest by far: only 6 tools but 32.9K tokens and 132KB serialized — ~26% of a 128K window. Its `execute_sql` / `execute_sql_readonly` tools carry enormous input schemas, averaging 5,486 tokens per tool.
 - **Azure** is second by both tokens (20.5K) and bytes (82KB): 66 tools averaging 311 tokens each. Roughly 15% of a 128K context window.
-- **Google Calendar** is third by tokens: only 8 tools but 17.9K tokens and 71KB serialized, averaging 2,231 tokens per tool.
-- **Microsoft SharePoint** and **Microsoft Teams** are the largest Microsoft 365 servers: 36 tools each, at 14.1K and 12.1K tokens respectively.
-- **Serena** is a larger developer-tools server: 30 tools, ~9.4K tokens, 38KB — roughly 7% of a 128K window. Uses the context-aware `ide-assistant` context (fewer tools than `desktop-app`) since the script doesn't pass `--context`.
+- **Serena** is third by bytes: 29 tools, ~9.3K tokens, 37KB — roughly 7% of a 128K window. Uses the context-aware `ide-assistant` context (fewer tools than `desktop-app`) since the script doesn't pass `--context`.
 - **Google Cloud** and **Grep** are the lightest: a single tool each, ~0.5K and ~0.7K tokens respectively.
-- **Microsoft Word** is the lightest multi-tool server: 4 tools at only 716 tokens, averaging 179 tokens per tool.
-- **Redshift** is right-sized: 6 tools at 6.7K tokens total, 1,116 avg — comparable in total size to Salesforce (12 tools, 5.9K) despite having half as many tools.
+- **Google Calendar** has dense input schemas: only 8 tools but averaging 2,231 tokens each.
+- **Redshift** is right-sized: 6 tools at 6.7K tokens total, 1,116 avg — comparable to Salesforce (12 tools, 5.9K).
 - **Google Analytics** is moderately heavy: 9 tools at 13.6K tokens and 54KB (1,510 avg). More tools than the 7 documented — live `tools/list` returns 9.
 - **Context7** is lightweight at 2 tools and ~1.2K tokens, despite fetching potentially large documentation payloads at runtime.
 - **Gmail** exposes 13 tools (more than the 10 on the page — live `tools/list` reveals `list_drafts`, `label_thread`, `unlabel_thread`), ~10.7K tokens and 43KB.
 - **Grep** (from [Vercel's blog post](https://vercel.com/blog/grep-a-million-github-repositories-via-mcp)) adds only ~741 tokens for access to 1M+ GitHub repositories.
-- Most stdio servers stay under 7K tokens total, with Azure, Google Analytics, and Serena being the exceptions.
+- Most stdio servers stay under 6K tokens total, with Azure and Serena being the exceptions.
 
 ## Usage
 

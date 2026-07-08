@@ -141,11 +141,11 @@ const SERVERS: ServerSpec[] = [
     args: ["awslabs.redshift-mcp-server@latest"],
   },
 
-  // Google Analytics (local uvx)
+  // Google Analytics (local pipx)
   {
     name: "Google Analytics",
-    command: "uvx",
-    args: ["analytics-mcp"],
+    command: "pipx",
+    args: ["run", "analytics-mcp"],
   },
 
   // Microsoft agent365 MCPs require {tenantId} in the URL and a delegated
